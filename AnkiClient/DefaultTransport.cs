@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using System.Net;
 using System.IO;
 using System.IO.Compression;
-using System.Data.SQLite;
 using System.Security.Cryptography.X509Certificates;
 
 namespace AnkiClient
@@ -31,7 +29,7 @@ namespace AnkiClient
         {
             throw new NotImplementedException();
         }
-
+        /*
         public string Download(string userToken, string clientInfo)
         {
             var req = CreateRequest(new Uri(this.baseUri, "download"));
@@ -52,13 +50,6 @@ namespace AnkiClient
             sw.Flush();
             //StreamWriter csw = new StreamWriter(new GZipStream(stream, CompressionMode.Compress));
 
-           /* BinaryWriter bw = new BinaryWriter(stream);
-            bw.Write(Zip(data.ToString(Newtonsoft.Json.Formatting.None)));
-            bw.Flush();
-            //csw.Flush();
-            sw.WriteLine();
-            sw.WriteLine($"--{DefaultTransport.boundary}--");
-            //sw.Flush();*/
             sw.Close();
             //csw.Close();
 
@@ -75,13 +66,14 @@ namespace AnkiClient
             return temPath;
 
         }
-
+        */
+        /*
         public string Finish(Dictionary<string, string> headers)
         {
             throw new NotImplementedException();
         }
-
-        public string Request(string method, Dictionary<string, string> headers, JObject data)
+        */
+        public Stream Request(string method, Dictionary<string, string> headers, string data)
         {
             var req = CreateRequest(new Uri(this.baseUri, method));
             var stream = req.GetRequestStream();
@@ -93,31 +85,30 @@ namespace AnkiClient
                 sw.WriteLine();
                 sw.WriteLine(h.Value);
             }
-            sw.WriteLine($"--{DefaultTransport.boundary}");
-            sw.WriteLine("Content-Disposition: form-data; name=\"data\"; filename=\"data\"");
-            sw.WriteLine("Content-Type: application/octet-stream");
-            sw.WriteLine();
-            sw.Flush();
-            //StreamWriter csw = new StreamWriter(new GZipStream(stream, CompressionMode.Compress));
 
-            BinaryWriter bw = new BinaryWriter(stream);
-            bw.Write(Zip(data.ToString(Newtonsoft.Json.Formatting.None)));
-            bw.Flush();
-            //csw.Flush();
+            if (!string.IsNullOrEmpty(data))
+            {
+                sw.WriteLine($"--{DefaultTransport.boundary}");
+                sw.WriteLine("Content-Disposition: form-data; name=\"data\"; filename=\"data\"");
+                sw.WriteLine("Content-Type: application/octet-stream");
+                sw.WriteLine();
+                sw.Flush();
+                BinaryWriter bw = new BinaryWriter(stream);
+                bw.Write(Zip(data));
+                bw.Flush();
+            }
             sw.WriteLine();
             sw.WriteLine($"--{DefaultTransport.boundary}--");
-            //sw.Flush();
+
+
             sw.Close();
-            //csw.Close();
 
 
             HttpWebResponse resp = (HttpWebResponse)req.GetResponse();
-            Stream rs = resp.GetResponseStream();
-            StreamReader sr = new StreamReader(rs);
-            return sr.ReadToEnd();
+            return resp.GetResponseStream();
         }
 
-        public static byte[] Zip(string value)
+        private static byte[] Zip(string value)
         {
             using (MemoryStream ms = new MemoryStream())
             using (GZipStream s = new GZipStream(ms, System.IO.Compression.CompressionMode.Compress))

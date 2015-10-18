@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.SQLite;
 using System.Linq;
 using System.Text;
@@ -12,14 +13,28 @@ namespace AnkiClient
     {
         static void Main(string[] args)
         {
+
             DefaultTransport transport = new DefaultTransport(new Uri("https://ankiweb.net/sync/"));
-            var res = transport.Request("hostKey", new Dictionary<string, string>() {["c"] = "1" }, new JObject() {["u"] = "alexandrov.ua@gmail.com",["p"] = "016777216" });
-            Console.WriteLine(res);
-            var json = JObject.Parse(res);
-            res = transport.Request("meta", new Dictionary<string, string>() {["c"] = "1",["s"] = "59e1a913",["k"] = json["key"].ToString() }, JObject.Parse("{\"cv\": \"ankidesktop, 2.0.33, win: 8\", \"v\": 8}"));
-            Console.WriteLine(res);
-            Console.WriteLine();
-            var path = transport.Download(json["key"].ToString(), JObject.Parse("{\"cv\": \"ankidesktop, 2.0.33, win: 8\", \"v\": 8}").ToString(Newtonsoft.Json.Formatting.None));
+            IAnkiApi api = new AnkiApi(transport);
+            string token = null;
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (string.IsNullOrEmpty(config.AppSettings.Settings["UserToken"].Value))
+            {
+                Console.WriteLine("Login");
+                token = api.Login("alexandrov.ua@gmail.com", "016777216");
+                config.AppSettings.Settings["UserToken"].Value = token;
+                config.Save();
+
+            }
+            else
+            {
+                token = config.AppSettings.Settings["UserToken"].Value;
+            }
+
+            Console.WriteLine(token);
+            var meta = api.Meta(token);
+            Console.WriteLine(meta);
+            var path = api.Download(token);
             string a = string.Format(@"Data Source={0};Version=3;New=False;Compress=True;", path);
             var sql_con = new SQLiteConnection(a);
             sql_con.Open();

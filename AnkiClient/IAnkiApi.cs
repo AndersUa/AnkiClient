@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 
 namespace AnkiClient
 {
-    class IAnkiApi
+    public interface IAnkiApi
     {
+        string Login(string userName, string password);
+        string Meta(string token);
+        string Download(string token);
     }
 }
